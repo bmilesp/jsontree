@@ -59,8 +59,22 @@ func TestGetDescendants(t *testing.T) {
 }
 
 func TestGetParentPath(t *testing.T) {
-	res, _ := getParentPath(testJsonTreeSimple, "b")
-	assert.Equal(t, res, `a`, "they should be equal")
+	flatTree, _ := flattenJson(testJsonTreeSimple)
+	res, _ := getParentPath(flatTree, "b")
+	assert.Equal(t, res, "a", "they should be equal")
+
+	res, _ = getParentPath(flatTree, "a")
+	assert.Equal(t, res, "", "they should be equal")
+
+	flatTree, _ = flattenJson(testJsonTree)
+	res, _ = getParentPath(flatTree, "j")
+	assert.Equal(t, res, `a.0.b.1.d.0.e.3.i`, "they should be equal")
+
+	res, _ = getParentPath(flatTree, "a")
+	assert.Equal(t, res, "", "they should be equal")
+
+	res, _ = getParentPath(flatTree, "m")
+	assert.Equal(t, res, "a", "they should be equal")
 }
 
 var testJsonTreeSimple = `{"a":[{"b" : []}]}`

@@ -1,7 +1,6 @@
 package jsontree
 
 import (
-	log"
 	"encoding/json"
 	"strings"
 
@@ -63,7 +62,6 @@ func getParentPath(flatTree string, key string) (string, error) {
 	splitKeys := strings.Split(path, Delimiter)
 	if len(splitKeys) >= 3 {
 		splitKeys = splitKeys[:len(splitKeys)-2]
-    log.Println(splitKeys);
 		parentPath := strings.Join(splitKeys[:], Delimiter)
 		return parentPath, nil
 	}

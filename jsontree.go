@@ -1,24 +1,43 @@
 package jsontree
 
 import(
+  //"log"
   "strings"
-  flatten "github.com/bmilesp/gojsonexplode"
   "encoding/json"
+  flatten "github.com/bmilesp/gojsonexplode"
+  gjson "github.com/tidwall/gjson"
 )
 
 var Delimiter = "."
 
 
-func FlattenJson(tree string)(string, error){
+
+func GetDescendants(json string, key string)(string, error){
+  flatTree, err := flattenJson(json)
+  if err != nil {
+    return "", err
+  }
+
+  parentPath, err := getPathFromKey(flatTree, key)
+  if err != nil {
+    return "", err
+  }
+
+  value := gjson.Get(json, parentPath)
+
+  return value.String(), nil
+}
+
+func flattenJson(tree string)(string, error){
   flat, err := flatten.Explodejsonstr(tree, Delimiter)
   if err != nil {
 		return "", err
 	}
-  return flat, err
+  return flat, nil
 }
 
 
-func GetPathFromKey(flatTree string,key string)(string, error){
+func getPathFromKey(flatTree string, key string)(string, error){
   m := make(map[string]string)
   err := json.Unmarshal([]byte(flatTree), &m)
 
@@ -41,5 +60,4 @@ func GetPathFromKey(flatTree string,key string)(string, error){
   }
 
   return "", nil
-
 }

@@ -2,6 +2,7 @@ package jsontree
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 
 	flatten "github.com/bmilesp/gojsonexplode"
@@ -21,6 +22,51 @@ func GetDescendants(json string, key string) (string, error) {
 	}
 	value := gjson.Get(json, parentPath)
 	return value.String(), nil
+}
+
+func GetSiblingKeys(json string, key string) ([]string, error) {
+	var siblingPaths []string
+	flatTree, err := flattenJson(json)
+	if err != nil {
+		return siblingPaths, err
+	}
+	path, err := getPathFromKey(flatTree, key)
+	if err != nil {
+		return siblingPaths, err
+	}
+	pathToElemNumber, err := getElementNumberPath(path)
+	if err != nil {
+		return siblingPaths, err
+	}
+	parentPath, err := getParentPath(flatTree, key)
+	if err != nil {
+		return siblingPaths, err
+	}
+	n := 0
+	currentPath := ""
+	for {
+		currentPath = parentPath + Delimiter + strconv.Itoa(n)
+		value := gjson.Get(json, currentPath)
+		if value.String() != "" {
+			if pathToElemNumber != currentPath {
+				siblingPaths = append(siblingPaths, currentPath)
+			}
+		} else {
+			break
+		}
+		n++
+	}
+	return siblingPaths, nil
+}
+
+func getElementNumberPath(path string) (string, error) {
+	splitKeys := strings.Split(path, Delimiter)
+	if len(splitKeys) >= 3 {
+		splitKeys = splitKeys[:len(splitKeys)-1]
+		elemPath := strings.Join(splitKeys[:], Delimiter)
+		return elemPath, nil
+	}
+	return "", nil
 }
 
 func flattenJson(tree string) (string, error) {
@@ -65,6 +111,5 @@ func getParentPath(flatTree string, key string) (string, error) {
 		parentPath := strings.Join(splitKeys[:], Delimiter)
 		return parentPath, nil
 	}
-
 	return "", nil
 }

@@ -24,6 +24,20 @@ func GetDescendants(json string, key string) (string, error) {
 	return value.String(), nil
 }
 
+func GetParentPath(flatTree string, key string) (string, error) {
+	path, err := getPathFromKey(flatTree, key)
+	if err != nil {
+		return "", err
+	}
+	splitKeys := strings.Split(path, Delimiter)
+	if len(splitKeys) >= 3 {
+		splitKeys = splitKeys[:len(splitKeys)-2]
+		parentPath := strings.Join(splitKeys[:], Delimiter)
+		return parentPath, nil
+	}
+	return "", nil
+}
+
 func GetSiblingPathsByKey(json string, key string) ([]string, error) {
 	var siblingPaths []string
 	flatTree, err := flattenJson(json)
@@ -38,7 +52,7 @@ func GetSiblingPathsByKey(json string, key string) ([]string, error) {
 	if err != nil {
 		return siblingPaths, err
 	}
-	parentPath, err := getParentPath(flatTree, key)
+	parentPath, err := GetParentPath(flatTree, key)
 	if err != nil {
 		return siblingPaths, err
 	}
@@ -96,20 +110,6 @@ func getPathFromKey(flatTree string, key string) (string, error) {
 				returnPath.WriteString(Delimiter)
 			}
 		}
-	}
-	return "", nil
-}
-
-func getParentPath(flatTree string, key string) (string, error) {
-	path, err := getPathFromKey(flatTree, key)
-	if err != nil {
-		return "", err
-	}
-	splitKeys := strings.Split(path, Delimiter)
-	if len(splitKeys) >= 3 {
-		splitKeys = splitKeys[:len(splitKeys)-2]
-		parentPath := strings.Join(splitKeys[:], Delimiter)
-		return parentPath, nil
 	}
 	return "", nil
 }

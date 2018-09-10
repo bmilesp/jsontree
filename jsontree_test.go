@@ -89,27 +89,27 @@ func TestgetElementNumberPath(t *testing.T) {
 	assert.Equal(t, res, `a`, "they should be equal")
 }
 
-func TestGetSiblingKeys(t *testing.T) {
-	res, _ := GetSiblingKeys(testJsonTree, "g")
+func TestGetSiblingPathsByKey(t *testing.T) {
+	res, _ := GetSiblingPathsByKey(testJsonTree, "g")
 	expected := []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.2", "a.0.b.1.d.0.e.3"}
 	assert.Equal(t, res, expected, "they should be equal")
-	res, _ = GetSiblingKeys(testJsonTree, "h")
+	res, _ = GetSiblingPathsByKey(testJsonTree, "h")
 	expected = []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.1", "a.0.b.1.d.0.e.3"}
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingKeys(testJsonTree, "i")
+	res, _ = GetSiblingPathsByKey(testJsonTree, "i")
 	expected = []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.1", "a.0.b.1.d.0.e.2"}
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingKeys(testJsonTree, "l")
+	res, _ = GetSiblingPathsByKey(testJsonTree, "l")
 	expected = []string{"a.0.b.1.d.0.e.3.i.0", "a.0.b.1.d.0.e.3.i.1"}
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingKeys(testJsonTree, "a")
+	res, _ = GetSiblingPathsByKey(testJsonTree, "a")
 	expected = nil
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingKeys(testJsonTree, "n")
+	res, _ = GetSiblingPathsByKey(testJsonTree, "n")
 	expected = []string{"a.0", "a.1"}
 	assert.Equal(t, res, expected, "they should be equal")
 }

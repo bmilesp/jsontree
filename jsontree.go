@@ -24,7 +24,7 @@ func GetDescendants(json string, key string) (string, error) {
 	return value.String(), nil
 }
 
-func GetSiblingKeys(json string, key string) ([]string, error) {
+func GetSiblingPathsByKey(json string, key string) ([]string, error) {
 	var siblingPaths []string
 	flatTree, err := flattenJson(json)
 	if err != nil {

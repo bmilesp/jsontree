@@ -35,4 +35,4 @@ If given a simple JSON tree containing nothing but ids as keys and children as a
 }
 ```
 
-jsontree package gives you tools to Traverse and Search keys to return dot-notated paths fro use in other packages like gjson.
+jsontree package gives you tools to traverse and search keys to return dot-notated paths fro use in other packages like gjson.

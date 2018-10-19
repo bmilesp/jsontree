@@ -6,6 +6,113 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHasChildren(t *testing.T) {
+	id, _ := HasChildren(testJsonTree, "b")
+	assert.True(t, id)
+
+	id, _ = HasChildren(testJsonTree, "c")
+	assert.False(t, id)
+
+	id, _ = HasChildren(testJsonTree, "d")
+	assert.True(t, id)
+
+	id, _ = HasChildren(testJsonTree, "e")
+	assert.True(t, id)
+
+	id, _ = HasChildren(testJsonTree, "n")
+	assert.False(t, id)
+}
+
+func TestGetFirstChildId(t *testing.T) {
+	id, _ := GetFirstChildId(testJsonTree, "b")
+	assert.Equal(t, `c`, id, "they should be equal")
+
+	id, _ = GetFirstChildId(testJsonTree, "c")
+	assert.Equal(t, ``, id, "they should be equal")
+
+	id, _ = GetFirstChildId(testJsonTree, "d")
+	assert.Equal(t, `e`, id, "they should be equal")
+
+	id, _ = GetFirstChildId(testJsonTree, "e")
+	assert.Equal(t, `f`, id, "they should be equal")
+
+	id, _ = GetFirstChildId(testJsonTree, "n")
+	assert.Equal(t, ``, id, "they should be equal")
+}
+
+func TestGetElderSiblingId(t *testing.T) {
+	id, _ := GetElderSiblingId(testJsonTree, "b")
+	assert.Equal(t, `a`, id, "they should be equal")
+
+	id, _ = GetElderSiblingId(testJsonTree, "j")
+	assert.Equal(t, `i`, id, "they should be equal")
+
+	id, _ = GetElderSiblingId(testJsonTree, "m")
+	assert.Equal(t, `a`, id, "they should be equal")
+
+	id, _ = GetElderSiblingId(testJsonTree, "n")
+	assert.Equal(t, `a`, id, "they should be equal")
+
+	id, _ = GetElderSiblingId(testJsonTree, "l")
+	assert.Equal(t, `i`, id, "they should be equal")
+
+	id, _ = GetElderSiblingId(testJsonTree, "a")
+	assert.Equal(t, ``, id, "they should be equal")
+
+	id, _ = GetElderSiblingId(testJsonTree, "g")
+	assert.Equal(t, `e`, id, "they should be equal")
+}
+
+func TestGetIdFromPAth(t *testing.T) {
+	id := getIdfromPath("a.0.b")
+	assert.Equal(t, id, `b`, "they should be equal")
+
+	id = getIdfromPath("a")
+	assert.Equal(t, id, `a`, "they should be equal")
+
+	id = getIdfromPath("a.0.b.1.d.0.e.3.i.0.j")
+	assert.Equal(t, id, `j`, "they should be equal")
+}
+
+func TestGetNumericArrayKeyFromPath(t *testing.T) {
+	id, _ := getNumericArrayKeyFromPath("a.0.b")
+	assert.Equal(t, id, 0, "they should be equal")
+
+	id, _ = getNumericArrayKeyFromPath("a.2.n")
+	assert.Equal(t, id, 2, "they should be equal")
+
+	id, _ = getNumericArrayKeyFromPath("a.0.b.1.d.0.e.3.i.0.j")
+	assert.Equal(t, id, 0, "they should be equal")
+
+	id, _ = getNumericArrayKeyFromPath("a.0.b.1.d.0.e.3.i")
+	assert.Equal(t, id, 3, "they should be equal")
+}
+
+func TestGetYoungerSiblingsIds(t *testing.T) {
+	res, _ := GetYoungerSiblingsIds(testJsonTree, "g")
+	expected := []string{"h", "i"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetYoungerSiblingsIds(testJsonTree, "f")
+	expected = []string{"g", "h", "i"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetYoungerSiblingsIds(testJsonTree, "b")
+	expected = []string{"m", "n"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetYoungerSiblingsIds(testJsonTree, "m")
+	expected = []string{"n"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetYoungerSiblingsIds(testJsonTree, "n")
+	var expected2 []string
+	assert.Equal(t, expected2, res, "they should be equal")
+
+	res, _ = GetYoungerSiblingsIds(testJsonTree, "a")
+	assert.Equal(t, expected2, res, "they should be equal")
+}
+
 func TestFlattenJson(t *testing.T) {
 
 	res, _ := flattenJson(testJsonTreeSimple)
@@ -15,65 +122,65 @@ func TestFlattenJson(t *testing.T) {
 	assert.Equal(t, res, bigResult1, "they should be equal")
 }
 
-func TestGetPathFromKey(t *testing.T) {
+func TestgetPathFromId(t *testing.T) {
 
 	data, _ := flattenJson(testJsonTreeSimple)
-	res, _ := getPathFromKey(data, "b")
+	res, _ := getPathFromId(data, "b")
 	assert.Equal(t, res, "a.0.b", "they should be equal")
 
-	res, _ = getPathFromKey(data, "a")
+	res, _ = getPathFromId(data, "a")
 	assert.Equal(t, res, "a", "they should be equal")
 
 	data, _ = flattenJson(testJsonTree)
-	res, _ = getPathFromKey(data, "a")
+	res, _ = getPathFromId(data, "a")
 	assert.Equal(t, res, "a", "they should be equal")
 
-	res, _ = getPathFromKey(data, "j")
+	res, _ = getPathFromId(data, "j")
 	assert.Equal(t, res, "a.0.b.1.d.0.e.3.i.0.j", "they should be equal")
 
-	res, _ = getPathFromKey(data, "d")
+	res, _ = getPathFromId(data, "d")
 	assert.Equal(t, res, "a.0.b.1.d", "they should be equal")
 
-	res, _ = getPathFromKey(data, "m")
+	res, _ = getPathFromId(data, "m")
 	assert.Equal(t, res, "a.1.m", "they should be equal")
 }
 
 func TestGetDescendants(t *testing.T) {
-	res, _ := GetDescendants(testJsonTreeSimple, "a")
+	res, _ := getDescendants(testJsonTreeSimple, "a")
 	assert.Equal(t, res, `[{"b" : []}]`, "they should be equal")
 
-	res, _ = GetDescendants(testJsonTreeSimple, "b")
+	res, _ = getDescendants(testJsonTreeSimple, "b")
 	assert.Equal(t, res, `[]`, "they should be equal")
 
-	res, _ = GetDescendants(testJsonTree, "e")
+	res, _ = getDescendants(testJsonTree, "e")
 	assert.Equal(t, res, `[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]`, "they should be equal")
 
-	res, _ = GetDescendants(testJsonTree, "i")
+	res, _ = getDescendants(testJsonTree, "i")
 	assert.Equal(t, res, `[{"j":[]},{"k":[]},{"l":[]}]`, "they should be equal")
 
-	res, _ = GetDescendants(testJsonTree, "a")
+	res, _ = getDescendants(testJsonTree, "a")
 	assert.Equal(t, res, `[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]`, "they should be equal")
 
-	res, _ = GetDescendants(testJsonTree, "l")
+	res, _ = getDescendants(testJsonTree, "l")
 	assert.Equal(t, res, `[]`, "they should be equal")
 }
 
 func TestGetParentPath(t *testing.T) {
 	flatTree, _ := flattenJson(testJsonTreeSimple)
-	res, _ := GetParentPath(flatTree, "b")
+	res, _ := getParentPath(flatTree, "b")
 	assert.Equal(t, res, "a", "they should be equal")
 
-	res, _ = GetParentPath(flatTree, "a")
+	res, _ = getParentPath(flatTree, "a")
 	assert.Equal(t, res, "", "they should be equal")
 
 	flatTree, _ = flattenJson(testJsonTree)
-	res, _ = GetParentPath(flatTree, "j")
+	res, _ = getParentPath(flatTree, "j")
 	assert.Equal(t, res, `a.0.b.1.d.0.e.3.i`, "they should be equal")
 
-	res, _ = GetParentPath(flatTree, "a")
+	res, _ = getParentPath(flatTree, "a")
 	assert.Equal(t, res, "", "they should be equal")
 
-	res, _ = GetParentPath(flatTree, "m")
+	res, _ = getParentPath(flatTree, "m")
 	assert.Equal(t, res, "a", "they should be equal")
 }
 
@@ -89,36 +196,147 @@ func TestgetElementNumberPath(t *testing.T) {
 	assert.Equal(t, res, `a`, "they should be equal")
 }
 
-func TestGetSiblingPathsByKey(t *testing.T) {
-	res, _ := GetSiblingPathsByKey(testJsonTree, "g")
+func TestgetSiblingNumericPathsById(t *testing.T) {
+	res, _ := getSiblingNumericPathsById(testJsonTree, "g")
 	expected := []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.2", "a.0.b.1.d.0.e.3"}
 	assert.Equal(t, res, expected, "they should be equal")
-	res, _ = GetSiblingPathsByKey(testJsonTree, "h")
+
+	res, _ = getSiblingNumericPathsById(testJsonTree, "h")
 	expected = []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.1", "a.0.b.1.d.0.e.3"}
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingPathsByKey(testJsonTree, "i")
+	res, _ = getSiblingNumericPathsById(testJsonTree, "i")
 	expected = []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.1", "a.0.b.1.d.0.e.2"}
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingPathsByKey(testJsonTree, "l")
+	res, _ = getSiblingNumericPathsById(testJsonTree, "l")
 	expected = []string{"a.0.b.1.d.0.e.3.i.0", "a.0.b.1.d.0.e.3.i.1"}
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingPathsByKey(testJsonTree, "a")
+	res, _ = getSiblingNumericPathsById(testJsonTree, "a")
 	expected = nil
 	assert.Equal(t, res, expected, "they should be equal")
 
-	res, _ = GetSiblingPathsByKey(testJsonTree, "n")
+	res, _ = getSiblingNumericPathsById(testJsonTree, "n")
 	expected = []string{"a.0", "a.1"}
 	assert.Equal(t, res, expected, "they should be equal")
+}
+
+func TestGetDistinctFromNumericPath(t *testing.T) {
+	res, _ := getDistinctFromNumericPath(testJsonTree, "a.0.b.1.d.0.e.0")
+	assert.Equal(t, res, "a.0.b.1.d.0.e.0.f", "they should be equal")
+
+	res, _ = getDistinctFromNumericPath(testJsonTree, "a.0.b.1")
+	assert.Equal(t, res, "a.0.b.1.d", "they should be equal")
+
+	res, _ = getDistinctFromNumericPath(testJsonTree, "a.0")
+	assert.Equal(t, res, "a.0.b", "they should be equal")
+
+	res, _ = getDistinctFromNumericPath(testJsonTree, "a.0.b.1.d.0.e.3.i.0")
+	assert.Equal(t, res, "a.0.b.1.d.0.e.3.i.0.j", "they should be equal")
+}
+
+func TestGetAllSiblingsIds(t *testing.T) {
+	res, _ := GetAllSiblingsIds(testJsonTree, "g")
+	expected := []string{"f", "h", "i"}
+	assert.Equal(t, res, expected, "they should be equal")
+
+	res, _ = GetAllSiblingsIds(testJsonTree, "a")
+	expected = []string(nil)
+	assert.Equal(t, res, expected, "they should be equal")
+
+	res, _ = GetAllSiblingsIds(testJsonTree, "b")
+	expected = []string{"m", "n"}
+	assert.Equal(t, res, expected, "they should be equal")
+
+	res, _ = GetAllSiblingsIds(testJsonTree, "l")
+	expected = []string{"j", "k"}
+	assert.Equal(t, res, expected, "they should be equal")
+
+	res, _ = GetAllSiblingsIds(testJsonTree, "c")
+	expected = []string{"d"}
+	assert.Equal(t, res, expected, "they should be equal")
+}
+
+func TestGetDescendantsIds(t *testing.T) {
+	res, _ := GetDescendantsIds(testJsonTree, "g")
+	expected := []string(nil)
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetDescendantsIds(testJsonTree, "i")
+	expected = []string{"j", "k", "l"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetDescendantsIds(testJsonTree, "d")
+	expected = []string{"e", "f", "g", "h", "i", "j", "k", "l"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetDescendantsIds(testJsonTree, "n")
+	expected = []string(nil)
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetDescendantsIds(testJsonTree, "a")
+	expected = []string{"b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+}
+
+func TestGetParentId(t *testing.T) {
+	res, _ := GetParentId(testJsonTree, "i")
+	expected := "e"
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetParentId(testJsonTree, "h")
+	expected = "e"
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetParentId(testJsonTree, "f")
+	expected = "e"
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetParentId(testJsonTree, "b")
+	expected = "a"
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetParentId(testJsonTree, "m")
+	expected = "a"
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetParentId(testJsonTree, "a")
+	expected = ""
+}
+
+func TestIsFirstChild(t *testing.T) {
+	res, _ := IsFirstChild(testJsonTree, "a")
+	assert.True(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "b")
+	assert.True(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "f")
+	assert.True(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "j")
+	assert.True(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "i")
+	assert.False(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "m")
+	assert.False(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "n")
+	assert.False(t, res)
+
+	res, _ = IsFirstChild(testJsonTree, "l")
+	assert.False(t, res)
 }
 
 var testJsonTreeSimple = `{"a":[{"b" : []}]}`
 var testJsonTree = `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`
 
 /*
-{
+{expected []string
 	"a": [{
 		"b": [{
 			"c": []
@@ -139,7 +357,7 @@ var testJsonTree = `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},
 						"l": []
 					}]
 				}]
-			}]
+			}]string
 		}]
 	}, {
 		"m": []

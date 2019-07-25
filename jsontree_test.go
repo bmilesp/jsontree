@@ -3,8 +3,30 @@ package jsontree
 import (
 	"testing"
 
+	"github.com/bmiles-development/gjson"
+	"github.com/bmilesp/sjson"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestGetNextYoungerSiblingId(t *testing.T) {
+	id, _ := GetNextYoungerSiblingId(testJsonTree, "g")
+	assert.Equal(t, `h`, id)
+
+	id, _ = GetNextYoungerSiblingId(testJsonTree, "i")
+	assert.Equal(t, ``, id)
+
+	id, _ = GetNextYoungerSiblingId(testJsonTree, "a")
+	assert.Equal(t, ``, id)
+
+	id, _ = GetNextYoungerSiblingId(testJsonTree, "b")
+	assert.Equal(t, `m`, id)
+
+	id, _ = GetNextYoungerSiblingId(testJsonTree, "m")
+	assert.Equal(t, `n`, id)
+
+	id, _ = GetNextYoungerSiblingId(testJsonTree, "k")
+	assert.Equal(t, `l`, id)
+}
 
 func TestHasChildren(t *testing.T) {
 	id, _ := HasChildren(testJsonTree, "b")
@@ -42,25 +64,25 @@ func TestGetFirstChildId(t *testing.T) {
 
 func TestGetElderSiblingId(t *testing.T) {
 	id, _ := GetElderSiblingId(testJsonTree, "b")
-	assert.Equal(t, `a`, id, "they should be equal")
+	assert.Equal(t, ``, id, "they should be equal")
 
 	id, _ = GetElderSiblingId(testJsonTree, "j")
-	assert.Equal(t, `i`, id, "they should be equal")
+	assert.Equal(t, ``, id, "they should be equal")
 
 	id, _ = GetElderSiblingId(testJsonTree, "m")
-	assert.Equal(t, `a`, id, "they should be equal")
+	assert.Equal(t, `b`, id, "they should be equal")
 
 	id, _ = GetElderSiblingId(testJsonTree, "n")
-	assert.Equal(t, `a`, id, "they should be equal")
+	assert.Equal(t, `m`, id, "they should be equal")
 
 	id, _ = GetElderSiblingId(testJsonTree, "l")
-	assert.Equal(t, `i`, id, "they should be equal")
+	assert.Equal(t, `k`, id, "they should be equal")
 
 	id, _ = GetElderSiblingId(testJsonTree, "a")
 	assert.Equal(t, ``, id, "they should be equal")
 
 	id, _ = GetElderSiblingId(testJsonTree, "g")
-	assert.Equal(t, `e`, id, "they should be equal")
+	assert.Equal(t, `f`, id, "they should be equal")
 }
 
 func TestGetIdFromPAth(t *testing.T) {
@@ -259,24 +281,28 @@ func TestGetAllSiblingsIds(t *testing.T) {
 }
 
 func TestGetDescendantsIds(t *testing.T) {
-	res, _ := GetDescendantsIds(testJsonTree, "g")
+	res, _ := GetDescendantsIds(testJsonTree, "g", false)
 	expected := []string(nil)
 	assert.Equal(t, expected, res, "they should be equal")
 
-	res, _ = GetDescendantsIds(testJsonTree, "i")
+	res, _ = GetDescendantsIds(testJsonTree, "i", false)
 	expected = []string{"j", "k", "l"}
 	assert.Equal(t, expected, res, "they should be equal")
 
-	res, _ = GetDescendantsIds(testJsonTree, "d")
+	res, _ = GetDescendantsIds(testJsonTree, "d", false)
 	expected = []string{"e", "f", "g", "h", "i", "j", "k", "l"}
 	assert.Equal(t, expected, res, "they should be equal")
 
-	res, _ = GetDescendantsIds(testJsonTree, "n")
+	res, _ = GetDescendantsIds(testJsonTree, "n", false)
 	expected = []string(nil)
 	assert.Equal(t, expected, res, "they should be equal")
 
-	res, _ = GetDescendantsIds(testJsonTree, "a")
+	res, _ = GetDescendantsIds(testJsonTree, "a", false)
 	expected = []string{"b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n"}
+	assert.Equal(t, expected, res, "they should be equal")
+
+	res, _ = GetDescendantsIds(testJsonTree, "e", true)
+	expected = []string{"f", "g", "h", "i"}
 	assert.Equal(t, expected, res, "they should be equal")
 
 }
@@ -332,6 +358,81 @@ func TestIsFirstChild(t *testing.T) {
 	assert.False(t, res)
 }
 
+func TestIsLastChild(t *testing.T) {
+	res, _ := IsLastChild(testJsonTree, "h")
+	assert.False(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "a")
+	assert.True(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "b")
+	assert.False(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "j")
+	assert.False(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "i")
+	assert.True(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "m")
+	assert.False(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "n")
+	assert.True(t, res)
+
+	res, _ = IsLastChild(testJsonTree, "l")
+	assert.True(t, res)
+
+}
+
+func TestAddbeforeId(t *testing.T) {
+	res, _ := addBeforeId(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "before")
+	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"w":[{"y":[]}]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
+
+	res, _ = addBeforeId(testJsonTree, `f`, `{"w": [{"y":[]}]}`, "before")
+	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"w":[{"y":[]}]},{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
+
+	res, _ = addBeforeId(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "before")
+	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"w":[{"y":[]}]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
+
+	res, _ = addBeforeId(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "after")
+	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]},{"w":[{"y":[]}]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
+
+	res, _ = addBeforeId(testJsonTree, `b`, `{"xxx":[]}`, "after")
+	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"xxx":[]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
+
+}
+
+func TestAddJsonPieces(t *testing.T) {
+	//get parent path from id:
+	flatTree, _ := flattenJson(testJsonTree)
+
+	parentPath, _ := getParentPath(flatTree, "i")
+	assert.Equal(t, `a.0.b.1.d.0.e`, parentPath, "they should be equal")
+
+	//find total siblings
+	totalChildren := gjson.Get(testJsonTree, parentPath+".#")
+	assert.Equal(t, float64(4), totalChildren.Num, "they should be equal")
+
+	branch := gjson.Parse(testJsonTree).Get("a.0.b.1.d.0.e")
+	assert.Equal(t, `[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]`, branch.Raw, "they should be equal")
+
+	//loop through branch and append where needs be
+
+	value, _ := sjson.Set(testJsonTree, "a.0.b.3", gjson.Parse(`{"w": [{"y":[]}]}`).Value().(map[string]interface{}))
+	assert.Equal(t, value, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]},null,{"w":[{"y":[]}]}]},{"m":[]},{"n":[]}]}`, "they should be equal")
+
+	/*
+		value, _ = sjson.Set(`[]`, "0", gjson.Parse(`{"w": [{"y":[]}]}`).Value().(map[string]interface{}))
+		value, _ = sjson.Set(value, "1", gjson.Parse(`{"w": [{"y":[]}]}`).Value().(map[string]interface{}))
+	*/
+
+	//test delete
+	deleted, _ := sjson.Delete(testJsonTree, "a.0.b.1")
+	assert.Equal(t, `{"a":[{"b":[{"c":[]}]},{"m":[]},{"n":[]}]}`, deleted, "they should be equal")
+
+}
+
 var testJsonTreeSimple = `{"a":[{"b" : []}]}`
 var testJsonTree = `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`
 
@@ -357,7 +458,7 @@ var testJsonTree = `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},
 						"l": []
 					}]
 				}]
-			}]string
+			}]
 		}]
 	}, {
 		"m": []

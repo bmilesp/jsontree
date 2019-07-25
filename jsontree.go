@@ -3,10 +3,12 @@ package jsontree
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"strconv"
 	"strings"
 
 	flatten "github.com/bmilesp/gojsonexplode"
+	"github.com/bmilesp/sjson"
 	gjson "github.com/tidwall/gjson"
 )
 
@@ -25,7 +27,7 @@ func GetParentId(jsonTree string, key string) (string, error) {
 	return parentId, err
 }
 
-func GetDescendantsIds(jsonTree string, key string) ([]string, error) {
+func GetDescendantsIds(jsonTree string, key string, childrenOnly bool) ([]string, error) {
 	var ids []string
 	var emptyIds []string
 	descendantJsonTree, err := getDescendants(jsonTree, key)
@@ -42,11 +44,13 @@ func GetDescendantsIds(jsonTree string, key string) ([]string, error) {
 		for k, _ := range vals {
 			ids = append(ids, k)
 			//check for more descendants
-			descendantIds, err := GetDescendantsIds(jsonTree, k)
-			if err != nil {
-				return emptyIds, err
+			if !childrenOnly {
+				descendantIds, err := GetDescendantsIds(jsonTree, k, false)
+				if err != nil {
+					return emptyIds, err
+				}
+				ids = append(ids, descendantIds...)
 			}
-			ids = append(ids, descendantIds...)
 		}
 	}
 	return ids, err
@@ -74,7 +78,7 @@ func GetAllSiblingsIds(jsonTree string, id string) ([]string, error) {
 }
 
 func GetFirstChildId(jsonTree string, key string) (string, error) {
-	descendantIds, err := GetDescendantsIds(jsonTree, key)
+	descendantIds, err := GetDescendantsIds(jsonTree, key, false)
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +89,7 @@ func GetFirstChildId(jsonTree string, key string) (string, error) {
 }
 
 func HasChildren(jsonTree string, key string) (bool, error) {
-	descendantIds, err := GetDescendantsIds(jsonTree, key)
+	descendantIds, err := GetDescendantsIds(jsonTree, key, false)
 	if err != nil {
 		return false, err
 	}
@@ -117,6 +121,29 @@ func IsFirstChild(jsonTree string, key string) (bool, error) {
 		return true, err
 	}
 	return false, err
+}
+
+func IsLastChild(jsonTree string, key string) (bool, error) {
+	youngerSiblings, err := GetYoungerSiblingsIds(jsonTree, key)
+	if err != nil {
+		return false, err
+	}
+	if youngerSiblings == nil {
+		return true, err
+	} else {
+		return false, err
+	}
+}
+
+func GetNextYoungerSiblingId(jsonTree string, id string) (string, error) {
+	youngerSiblingsIds, err := GetYoungerSiblingsIds(jsonTree, id)
+	if err != nil {
+		return "error", err
+	}
+	if youngerSiblingsIds == nil {
+		return "", err
+	}
+	return youngerSiblingsIds[0], err
 }
 
 func GetYoungerSiblingsIds(jsonTree string, key string) ([]string, error) {
@@ -169,30 +196,66 @@ func GetYoungerSiblingsIds(jsonTree string, key string) ([]string, error) {
 
 func GetElderSiblingId(jsonTree string, id string) (string, error) {
 	elderSiblingId := ""
-	parentId, err := GetParentId(jsonTree, id)
+	allSiblings, err := GetAllSiblingsIds(jsonTree, id)
 	if err != nil {
 		return elderSiblingId, err
 	}
-	allChildren, err := GetAllSiblingsIds(jsonTree, id)
+	if allSiblings == nil { // no elder siblings, first child
+		return elderSiblingId, err
+	}
+	flatTree, err := flattenJson(jsonTree)
 	if err != nil {
 		return elderSiblingId, err
 	}
-	if allChildren == nil { // no elder siblings, first child
+	currentPath, err := getPathFromId(flatTree, id)
+	if err != nil {
 		return elderSiblingId, err
 	}
-	currentNumericKey, err := getNumericArrayKeyFromPath(id)
-	for _, v := range allChildren {
-		siblingNumericKey, err := getNumericArrayKeyFromPath(v)
+	currentNumericKey, err := getNumericArrayKeyFromPath(currentPath)
+	for _, v := range allSiblings {
+		siblingPath, err := getPathFromId(flatTree, v)
+		if err != nil {
+			return elderSiblingId, err
+		}
+		siblingNumericKey, err := getNumericArrayKeyFromPath(siblingPath)
 		if err != nil {
 			return "", err
 		}
 		if siblingNumericKey == currentNumericKey-1 {
-			return getIdfromPath(v), err
+			return v, err
 		}
 	}
-	return parentId, err
+	return "", err
 }
 
+/*
+func Add(jsonTree string, directive string, id string, jsonObject ){
+
+	switch directive {
+	case "before":
+		//test can add a jsonTree within a tree?
+		siblingTree := gjson.Get();
+
+		//count all siblings
+		siblingIds := GetAllSiblingsIds(jsonTree, id)
+		var newSiblings []string
+		for k, v := range siblingIds {
+				if(v == id){
+					newSiblings = append(newSiblingIds, id)
+				}
+				newSiblingIds = append(newSiblingIds, id)
+		}
+
+
+		newPath, err := sjson.Set(jsonTree,  )
+	case "after":
+
+	case "insertFirst":
+
+	case "insertLast":
+
+}
+*/
 func getIdfromPath(path string) string {
 	popper := strings.Split(path, ".")
 	if len(popper) >= 1 {
@@ -339,4 +402,72 @@ func getPathFromId(flatTree string, id string) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func addBeforeId(jsonTree string, id string, insertBranch string, beforeAfter string) (string, error) {
+	flatTree, err := flattenJson(jsonTree)
+	if err != nil {
+		return "", err
+	}
+
+	idPath, err := getPathFromId(flatTree, id)
+	if err != nil {
+		return "", err
+	}
+	insertKey, err := getNumericArrayKeyFromPath(idPath)
+	if err != nil {
+		return "", err
+	}
+	parentPath, err := getParentPath(flatTree, id)
+	if err != nil {
+		return "", err
+	}
+	totalChildren := gjson.Get(jsonTree, parentPath+".#")
+
+	newBranchStr := `[]`
+	j := 0
+	for i := 0; i < int(totalChildren.Num); i++ {
+		insertKeyFound := i == insertKey
+
+		if insertKeyFound && beforeAfter == "before" {
+			val := gjson.Parse(insertBranch).Value().(map[string]interface{})
+			newBranchStr, err = sjson.Set(newBranchStr, strconv.Itoa(j), val)
+			j++
+			if err != nil {
+				log.Println("Set Error")
+				return "", err
+			}
+		}
+
+		siblingVal := gjson.Get(jsonTree, parentPath+"."+strconv.Itoa(i))
+		if err != nil {
+			log.Println("Get Error 1")
+			return "", err
+		}
+		newBranchStr, err = sjson.Set(newBranchStr, strconv.Itoa(j), gjson.Parse(siblingVal.Raw).Value().(map[string]interface{}))
+		j++
+		if err != nil {
+			log.Println("Get Error 2")
+			return "", err
+		}
+
+		if insertKeyFound && beforeAfter == "after" {
+			val := gjson.Parse(insertBranch).Value().(map[string]interface{})
+			newBranchStr, err = sjson.Set(newBranchStr, strconv.Itoa(j), val)
+			j++
+			if err != nil {
+				log.Println("Set Error")
+				return "", err
+			}
+		}
+	}
+
+	newJsonTree, err := sjson.Set(jsonTree, parentPath, gjson.Parse(newBranchStr).Value())
+	if err != nil {
+		log.Println("Get Error 2")
+		return "", err
+	}
+
+	//siblingBranch := gjson.Parse(siblingBranchStr)
+	return newJsonTree, err
 }

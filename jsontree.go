@@ -404,23 +404,22 @@ func getPathFromId(flatTree string, id string) (string, error) {
 	return "", nil
 }
 
-func addBeforeId(jsonTree string, id string, insertBranch string, beforeAfter string) (string, error) {
+func addNextToStationById(jsonTree string, id string, insertBranch string, beforeAfter string) (string, error) {
 	flatTree, err := flattenJson(jsonTree)
 	if err != nil {
-		return "", err
+		return `{"error": "jsontree.addNextToStationById - flattening tree"}`, err
 	}
-
 	idPath, err := getPathFromId(flatTree, id)
 	if err != nil {
-		return "", err
+		return `{"error": "jsontree.addNextToStationById - getPathFromId"}`, err
 	}
 	insertKey, err := getNumericArrayKeyFromPath(idPath)
 	if err != nil {
-		return "", err
+		return `{"error": "jsontree.addNextToStationById - getNumericArrayKeyFromPath"}`, err
 	}
 	parentPath, err := getParentPath(flatTree, id)
 	if err != nil {
-		return "", err
+		return `{"error": "jsontree.addNextToStationById - getParentPath"}`, err
 	}
 	totalChildren := gjson.Get(jsonTree, parentPath+".#")
 
@@ -434,20 +433,15 @@ func addBeforeId(jsonTree string, id string, insertBranch string, beforeAfter st
 			newBranchStr, err = sjson.Set(newBranchStr, strconv.Itoa(j), val)
 			j++
 			if err != nil {
-				log.Println("Set Error")
-				return "", err
+				return `{"error": "sjson.Set 1"}`, err
 			}
 		}
 
 		siblingVal := gjson.Get(jsonTree, parentPath+"."+strconv.Itoa(i))
-		if err != nil {
-			log.Println("Get Error 1")
-			return "", err
-		}
 		newBranchStr, err = sjson.Set(newBranchStr, strconv.Itoa(j), gjson.Parse(siblingVal.Raw).Value().(map[string]interface{}))
 		j++
 		if err != nil {
-			log.Println("Get Error 2")
+			log.Println("sjson.Set 2")
 			return "", err
 		}
 
@@ -456,18 +450,71 @@ func addBeforeId(jsonTree string, id string, insertBranch string, beforeAfter st
 			newBranchStr, err = sjson.Set(newBranchStr, strconv.Itoa(j), val)
 			j++
 			if err != nil {
-				log.Println("Set Error")
-				return "", err
+
+				return `{"error": "sjson.Set 3"}`, err
 			}
 		}
 	}
 
 	newJsonTree, err := sjson.Set(jsonTree, parentPath, gjson.Parse(newBranchStr).Value())
 	if err != nil {
-		log.Println("Get Error 2")
-		return "", err
+
+		return `{"error": "sjson.Set 4"}`, err
 	}
 
 	//siblingBranch := gjson.Parse(siblingBranchStr)
 	return newJsonTree, err
+}
+
+func addIntoStationById(jsonTree string, id string, insertBranch string, topBottom string) (string, error) {
+	flatTree, err := flattenJson(jsonTree)
+	if err != nil {
+		return `{"error": "jsontree.addIntoStationById - flattening tree"}`, err
+	}
+	idPath, err := getPathFromId(flatTree, id)
+	if err != nil {
+		return `{"error": "jsontree.addIntoStationById - getPathFromId"}`, err
+	}
+
+	totalChildren := gjson.Get(jsonTree, idPath+".#")
+	newBranchStr := ""
+
+	if int(totalChildren.Num) == 0 {
+		val := gjson.Parse(insertBranch).Value().(map[string]interface{})
+		newBranchStr, err = sjson.Set(jsonTree, idPath+".0", val)
+		if err != nil {
+			return `{"error": "jsontree.addIntoStationById - failed to insert into empty station"}`, err
+		}
+	} else {
+		if topBottom == "top" {
+			result := gjson.Get(jsonTree, idPath+".0")
+
+			firstKey := ""
+			result.ForEach(func(key, value gjson.Result) bool {
+				firstKey = key.String()
+				return true
+			})
+
+			newBranchStr, err = addNextToStationById(jsonTree, firstKey, insertBranch, "before")
+			if err != nil {
+				return `{"error": "jsontree.addIntoStationById - failed to insert before station"}`, err
+			}
+		} else {
+			lastChildKey := strconv.Itoa(int(totalChildren.Num) - 1)
+			result := gjson.Get(jsonTree, idPath+"."+lastChildKey)
+			lastKey := ""
+			result.ForEach(func(key, value gjson.Result) bool {
+				lastKey = key.String()
+				return true
+			})
+			newBranchStr, err = addNextToStationById(jsonTree, lastKey, insertBranch, "after")
+
+			if err != nil {
+				return `{"error": "jsontree.addIntoStationById - failed to insert after station"}`, err
+			}
+		}
+	}
+
+	return newBranchStr, err
+
 }

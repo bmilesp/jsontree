@@ -8,6 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetTopmostAncestorId(t *testing.T) {
+	id, _ := GetTopmostAncestorId(testJsonTree)
+	assert.Equal(t, `a`, id)
+
+	value := gjson.Get(testJsonTree, "a.0.b.1.d.0")
+	id, _ = GetTopmostAncestorId(value.String())
+	assert.Equal(t, `e`, id)
+}
+
 func TestGetNextYoungerSiblingId(t *testing.T) {
 	id, _ := GetNextYoungerSiblingId(testJsonTree, "g")
 	assert.Equal(t, `h`, id)
@@ -385,41 +394,41 @@ func TestIsLastChild(t *testing.T) {
 
 }
 
-func TestAddNextToStationById(t *testing.T) {
-	res, _ := addNextToStationById(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "before")
+func TestAddNextToLeafById(t *testing.T) {
+	res, _ := AddNextToLeafById(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "before")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"w":[{"y":[]}]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addNextToStationById(testJsonTree, `f`, `{"w": [{"y":[]}]}`, "before")
+	res, _ = AddNextToLeafById(testJsonTree, `f`, `{"w": [{"y":[]}]}`, "before")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"w":[{"y":[]}]},{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addNextToStationById(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "before")
+	res, _ = AddNextToLeafById(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "before")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"w":[{"y":[]}]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addNextToStationById(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "after")
+	res, _ = AddNextToLeafById(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "after")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]},{"w":[{"y":[]}]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addNextToStationById(testJsonTree, `b`, `{"xxx":[]}`, "after")
+	res, _ = AddNextToLeafById(testJsonTree, `b`, `{"xxx":[]}`, "after")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"xxx":[]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
 }
 
-func TestAddIntoStationById(t *testing.T) {
-	res, _ := addIntoStationById(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "top")
+func TestAddIntoLeafById(t *testing.T) {
+	res, _ := AddIntoLeafById(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "insideBeginning")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[{"w":[{"y":[]}]}]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addIntoStationById(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "bottom")
+	res, _ = AddIntoLeafById(testJsonTree, `h`, `{"w": [{"y":[]}]}`, "insideEnd")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[{"w":[{"y":[]}]}]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addIntoStationById(testJsonTree, `f`, `{"w": [{"y":[]}]}`, "bottom")
+	res, _ = AddIntoLeafById(testJsonTree, `f`, `{"w": [{"y":[]}]}`, "insideEnd")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[{"w":[{"y":[]}]}]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addIntoStationById(testJsonTree, `a`, `{"w": [{"y":[]}]}`, "top")
+	res, _ = AddIntoLeafById(testJsonTree, `a`, `{"w": [{"y":[]}]}`, "insideBeginning")
 	assert.Equal(t, `{"a":[{"w":[{"y":[]}]},{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addIntoStationById(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "bottom")
+	res, _ = AddIntoLeafById(testJsonTree, `l`, `{"w": [{"y":[]}]}`, "insideEnd")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[{"w":[{"y":[]}]}]}]}]}]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
-	res, _ = addIntoStationById(testJsonTree, `b`, `{"xxx":[]}`, "bottom")
+	res, _ = AddIntoLeafById(testJsonTree, `b`, `{"xxx":[]}`, "insideEnd")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]},{"i":[{"j":[]},{"k":[]},{"l":[]}]}]}]},{"xxx":[]}]},{"m":[]},{"n":[]}]}`, res, "they should be equal")
 
 }

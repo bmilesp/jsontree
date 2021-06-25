@@ -17,11 +17,11 @@ var Delimiter = "."
 func GetParentId(jsonTree string, key string) (string, error) {
 	flatTree, err := flattenJson(jsonTree)
 	if err != nil {
-		return "", err
+		return `{"error": "jsontree.GetParentId flattenJson Error"}`, err
 	}
 	parentPath, err := getParentPath(flatTree, key)
 	if err != nil {
-		return "", err
+		return `{"error": "jsontree.GetParentId parentPath Error"}`, err
 	}
 	parentId := getIdfromPath(parentPath)
 	return parentId, err
@@ -228,6 +228,23 @@ func GetElderSiblingId(jsonTree string, id string) (string, error) {
 	return "", err
 }
 
+func GetTopmostAncestorId(jsonTree string) (string, error) {
+
+	firstKey := ""
+	var m map[string]interface{}
+	err := json.Unmarshal([]byte(jsonTree), &m)
+	if err != nil {
+		return firstKey, err
+	}
+
+	for key, _ := range m {
+		firstKey = key
+		break
+	}
+
+	return firstKey, err
+}
+
 /*
 func Add(jsonTree string, directive string, id string, jsonObject ){
 
@@ -404,22 +421,22 @@ func getPathFromId(flatTree string, id string) (string, error) {
 	return "", nil
 }
 
-func addNextToStationById(jsonTree string, id string, insertBranch string, beforeAfter string) (string, error) {
+func AddNextToLeafById(jsonTree string, id string, insertBranch string, beforeAfter string) (string, error) {
 	flatTree, err := flattenJson(jsonTree)
 	if err != nil {
-		return `{"error": "jsontree.addNextToStationById - flattening tree"}`, err
+		return `{"error": "jsontree.addNextToLeafById - flattening tree"}`, err
 	}
 	idPath, err := getPathFromId(flatTree, id)
 	if err != nil {
-		return `{"error": "jsontree.addNextToStationById - getPathFromId"}`, err
+		return `{"error": "jsontree.addNextToLeafById - getPathFromId"}`, err
 	}
 	insertKey, err := getNumericArrayKeyFromPath(idPath)
 	if err != nil {
-		return `{"error": "jsontree.addNextToStationById - getNumericArrayKeyFromPath"}`, err
+		return `{"error": "jsontree.addNextToLeafById - getNumericArrayKeyFromPath"}`, err
 	}
 	parentPath, err := getParentPath(flatTree, id)
 	if err != nil {
-		return `{"error": "jsontree.addNextToStationById - getParentPath"}`, err
+		return `{"error": "jsontree.addNextToLeafById - getParentPath"}`, err
 	}
 	totalChildren := gjson.Get(jsonTree, parentPath+".#")
 
@@ -466,14 +483,14 @@ func addNextToStationById(jsonTree string, id string, insertBranch string, befor
 	return newJsonTree, err
 }
 
-func addIntoStationById(jsonTree string, id string, insertBranch string, topBottom string) (string, error) {
+func AddIntoLeafById(jsonTree string, id string, insertBranch string, topBottom string) (string, error) {
 	flatTree, err := flattenJson(jsonTree)
 	if err != nil {
-		return `{"error": "jsontree.addIntoStationById - flattening tree"}`, err
+		return `{"error": "jsontree.addIntoLeafById - flattening tree"}`, err
 	}
 	idPath, err := getPathFromId(flatTree, id)
 	if err != nil {
-		return `{"error": "jsontree.addIntoStationById - getPathFromId"}`, err
+		return `{"error": "jsontree.addIntoLeafById - getPathFromId"}`, err
 	}
 
 	totalChildren := gjson.Get(jsonTree, idPath+".#")
@@ -483,10 +500,10 @@ func addIntoStationById(jsonTree string, id string, insertBranch string, topBott
 		val := gjson.Parse(insertBranch).Value().(map[string]interface{})
 		newBranchStr, err = sjson.Set(jsonTree, idPath+".0", val)
 		if err != nil {
-			return `{"error": "jsontree.addIntoStationById - failed to insert into empty station"}`, err
+			return `{"error": "jsontree.addIntoLeafById - failed to insert into empty Leaf"}`, err
 		}
 	} else {
-		if topBottom == "top" {
+		if topBottom == "insideBeginning" {
 			result := gjson.Get(jsonTree, idPath+".0")
 
 			firstKey := ""
@@ -495,11 +512,11 @@ func addIntoStationById(jsonTree string, id string, insertBranch string, topBott
 				return true
 			})
 
-			newBranchStr, err = addNextToStationById(jsonTree, firstKey, insertBranch, "before")
+			newBranchStr, err = AddNextToLeafById(jsonTree, firstKey, insertBranch, "before")
 			if err != nil {
-				return `{"error": "jsontree.addIntoStationById - failed to insert before station"}`, err
+				return `{"error": "jsontree.addIntoLeafById - failed to insert before Leaf"}`, err
 			}
-		} else {
+		} else if topBottom == "insideEnd" {
 			lastChildKey := strconv.Itoa(int(totalChildren.Num) - 1)
 			result := gjson.Get(jsonTree, idPath+"."+lastChildKey)
 			lastKey := ""
@@ -507,11 +524,13 @@ func addIntoStationById(jsonTree string, id string, insertBranch string, topBott
 				lastKey = key.String()
 				return true
 			})
-			newBranchStr, err = addNextToStationById(jsonTree, lastKey, insertBranch, "after")
+			newBranchStr, err = AddNextToLeafById(jsonTree, lastKey, insertBranch, "after")
 
 			if err != nil {
-				return `{"error": "jsontree.addIntoStationById - failed to insert after station"}`, err
+				return `{"error": "jsontree.addIntoLeafById - failed to insert after Leaf"}`, err
 			}
+		} else {
+			return `{"error": "jsontree.addIntoLeafById - directive must be either insideTop or insideBottom"}`, err
 		}
 	}
 

@@ -153,7 +153,7 @@ func TestFlattenJson(t *testing.T) {
 	assert.Equal(t, res, bigResult1, "they should be equal")
 }
 
-func TestgetPathFromId(t *testing.T) {
+func TestGetPathFromId(t *testing.T) {
 
 	data, _ := flattenJson(testJsonTreeSimple)
 	res, _ := getPathFromId(data, "b")
@@ -215,7 +215,7 @@ func TestGetParentPath(t *testing.T) {
 	assert.Equal(t, res, "a", "they should be equal")
 }
 
-func TestgetElementNumberPath(t *testing.T) {
+func TestGetElementNumberPath(t *testing.T) {
 
 	res, _ := getElementNumberPath("a.0.b")
 	assert.Equal(t, res, `a.0`, "they should be equal")
@@ -224,10 +224,10 @@ func TestgetElementNumberPath(t *testing.T) {
 	assert.Equal(t, res, `a.0.b.1.d.0.e.3`, "they should be equal")
 
 	res, _ = getElementNumberPath("a")
-	assert.Equal(t, res, `a`, "they should be equal")
+	assert.Equal(t, res, ``, "they should be equal")
 }
 
-func TestgetSiblingNumericPathsById(t *testing.T) {
+func TestGetSiblingNumericPathsById(t *testing.T) {
 	res, _ := getSiblingNumericPathsById(testJsonTree, "g")
 	expected := []string{"a.0.b.1.d.0.e.0", "a.0.b.1.d.0.e.2", "a.0.b.1.d.0.e.3"}
 	assert.Equal(t, res, expected, "they should be equal")
@@ -339,6 +339,8 @@ func TestGetParentId(t *testing.T) {
 
 	res, _ = GetParentId(testJsonTree, "a")
 	expected = ""
+	assert.Equal(t, expected, res, "they should be equal")
+
 }
 
 func TestIsFirstChild(t *testing.T) {
@@ -460,6 +462,28 @@ func TestAddJsonPieces(t *testing.T) {
 	//test delete
 	deleted, _ := sjson.Delete(testJsonTree, "a.0.b.1")
 	assert.Equal(t, `{"a":[{"b":[{"c":[]}]},{"m":[]},{"n":[]}]}`, deleted, "they should be equal")
+
+}
+
+func TestRemoveById(t *testing.T) {
+
+	res, _ := RemoveById(testJsonTreeSimple, "b")
+	//log.Println(res)
+	assert.Equal(t, `{"a":[]}`, res)
+
+	res, _ = RemoveById(testJsonTree, "b")
+	//log.Println(res)
+	assert.Equal(t, `{"a":[{"m":[]},{"n":[]}]}`, res)
+
+	res, _ = RemoveById(testJsonTree, `i`)
+	//log.Println(res)
+	assert.Equal(t, `{"a":[{"b":[{"c":[]},{"d":[{"e":[{"f":[]},{"g":[]},{"h":[]}]}]}]},{"m":[]},{"n":[]}]}`, res)
+
+	_, err := RemoveById(testJsonTree, `a`)
+	assert.Error(t, err)
+
+	_, err = RemoveById(testJsonTree, `asrdgb35h54`)
+	assert.Error(t, err)
 
 }
 

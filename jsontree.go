@@ -233,6 +233,7 @@ func GetTopmostAncestorId(jsonTree string) (string, error) {
 	firstKey := ""
 	var m map[string]interface{}
 	err := json.Unmarshal([]byte(jsonTree), &m)
+
 	if err != nil {
 		return firstKey, err
 	}
@@ -380,6 +381,7 @@ func getDescendants(jsonTree string, key string) (string, error) {
 	return value.String(), nil
 }
 
+// will return empty string if top ancestor path is passed in
 func getElementNumberPath(path string) (string, error) {
 	splitKeys := strings.Split(path, Delimiter)
 	if len(splitKeys) >= 3 {
@@ -536,4 +538,26 @@ func AddIntoLeafById(jsonTree string, id string, insertBranch string, topBottom 
 
 	return newBranchStr, err
 
+}
+
+func RemoveById(jsonTree string, id string) (string, error) {
+	var newBranchStr string
+	var err error
+	flatTree, err := flattenJson(jsonTree)
+	if err != nil {
+		return `{"error": "jsontree.RemoveById - flattening tree"}`, err
+	}
+	idPath, err := getPathFromId(flatTree, id)
+	if err != nil {
+		return `{"error": "jsontree.RemoveById - getPathFromId"}`, err
+	}
+	pathToElemNumber, err := getElementNumberPath(idPath)
+	if err != nil {
+		return `{"error": "jsontree.RemoveById - getElementNumberPath"}`, err
+	}
+	newBranchStr, err = sjson.Delete(jsonTree, pathToElemNumber)
+	if err != nil {
+		return `{"error": "jsontree.RemoveById - failed to delete leaf/branch - Id cannot be top-most ancestor or key is invalid"}`, err
+	}
+	return newBranchStr, err
 }

@@ -420,7 +420,7 @@ func getPathFromId(flatTree string, id string) (string, error) {
 			}
 		}
 	}
-	return "", nil
+	return "", errors.New("no id/path found")
 }
 
 func AddNextToLeafById(jsonTree string, id string, insertBranch string, beforeAfter string) (string, error) {

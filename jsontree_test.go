@@ -287,6 +287,11 @@ func TestGetAllSiblingsIds(t *testing.T) {
 	res, _ = GetAllSiblingsIds(testJsonTree, "c")
 	expected = []string{"d"}
 	assert.Equal(t, res, expected, "they should be equal")
+
+	_, err := GetAllSiblingsIds(testJsonTree, "w")
+	expected = []string{"d"}
+
+	assert.Error(t, err)
 }
 
 func TestGetDescendantsIds(t *testing.T) {

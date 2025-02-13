@@ -30,7 +30,7 @@ func GetParentId(jsonTree string, key string) (string, error) {
 func GetDescendantsIds(jsonTree string, key string, childrenOnly bool) ([]string, error) {
 	var ids []string
 	var emptyIds []string
-	descendantJsonTree, err := getDescendants(jsonTree, key)
+	descendantJsonTree, err := GetDescendants(jsonTree, key)
 	if err != nil {
 		return ids, err
 	}
@@ -246,6 +246,19 @@ func GetTopmostAncestorId(jsonTree string) (string, error) {
 	return firstKey, err
 }
 
+func GetDescendants(jsonTree string, key string) (string, error) {
+	flatTree, err := flattenJson(jsonTree)
+	if err != nil {
+		return "", err
+	}
+	parentPath, err := getPathFromId(flatTree, key)
+	if err != nil {
+		return "", err
+	}
+	value := gjson.Get(jsonTree, parentPath)
+	return value.String(), nil
+}
+
 /*
 func Add(jsonTree string, directive string, id string, jsonObject ){
 
@@ -366,19 +379,6 @@ func getSiblingNumericPathsById(json string, id string) ([]string, error) {
 		n++
 	}
 	return siblingPaths, nil
-}
-
-func getDescendants(jsonTree string, key string) (string, error) {
-	flatTree, err := flattenJson(jsonTree)
-	if err != nil {
-		return "", err
-	}
-	parentPath, err := getPathFromId(flatTree, key)
-	if err != nil {
-		return "", err
-	}
-	value := gjson.Get(jsonTree, parentPath)
-	return value.String(), nil
 }
 
 // will return empty string if top ancestor path is passed in
